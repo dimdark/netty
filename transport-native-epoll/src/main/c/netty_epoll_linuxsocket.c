@@ -28,7 +28,6 @@
 #include <netinet/udp.h> // SOL_UDP
 #include <sys/sendfile.h>
 #include <linux/tcp.h> // TCP_NOTSENT_LOWAT is a linux specific define
-#include <linux/udp.h> // UDP_GRO
 #include "netty_epoll_linuxsocket.h"
 #include "netty_unix_errors.h"
 #include "netty_unix_filedescriptor.h"
@@ -58,8 +57,7 @@
 #define SO_BUSY_POLL 46
 #endif
 
-// SO_BUSY_POLL is defined in linux 5. We define this here so older kernels can compile.
-
+// UDP_GRO is defined in linux 5. We define this here so older kernels can compile.
 #ifndef UDP_GRO
 #define UDP_GRO 104
 #endif

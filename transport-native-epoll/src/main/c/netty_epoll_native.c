@@ -41,7 +41,7 @@
 #include <sys/syscall.h>
 
 // Needed for UDP_SEGMENT
-//#include <netinet/udp.h>
+#include <netinet/udp.h>
 
 #include "netty_epoll_linuxsocket.h"
 #include "netty_unix_buffer.h"
@@ -70,6 +70,12 @@
 #ifndef UDP_SEGMENT
 #define UDP_SEGMENT	103
 #endif
+
+// UDP_GRO is defined in linux 5. We define this here so older kernels can compile.
+#ifndef UDP_GRO
+#define UDP_GRO 104
+#endif
+
 
 // optional
 extern int epoll_create1(int flags) __attribute__((weak));
