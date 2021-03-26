@@ -27,7 +27,7 @@
 #include <netinet/in.h>
 #include <sys/sendfile.h>
 #include <linux/tcp.h> // TCP_NOTSENT_LOWAT is a linux specific define
-
+#include <linux/udp.h> // UDP_GRO
 #include "netty_epoll_linuxsocket.h"
 #include "netty_unix_errors.h"
 #include "netty_unix_filedescriptor.h"
@@ -55,6 +55,12 @@
 // SO_BUSY_POLL is defined in linux 3.11. We define this here so older kernels can compile.
 #ifndef SO_BUSY_POLL
 #define SO_BUSY_POLL 46
+#endif
+
+// SO_BUSY_POLL is defined in linux 5. We define this here so older kernels can compile.
+
+#ifndef UDP_GRO
+#define UDP_GRO 104
 #endif
 
 static jclass peerCredentialsClass = NULL;
@@ -610,6 +616,19 @@ static jobject netty_epoll_linuxsocket_getPeerCredentials(JNIEnv *env, jclass cl
      return (*env)->NewObject(env, peerCredentialsClass, peerCredentialsMethodId, credentials.pid, credentials.uid, gids);
 }
 
+static jint netty_epoll_linuxsocket_isUdpGro(JNIEnv* env, jclass clazz, jint fd) {
+     int optval;
+     if (netty_unix_socket_getOption(env, fd, SOL_UDP, UDP_GRO, &optval, sizeof(optval)) == -1) {
+         return -1;
+     }
+     return optval;
+}
+
+static void netty_epoll_linuxsocket_setUdpGro(JNIEnv* env, jclass clazz, jint fd, jint optval) {
+    netty_unix_socket_setOption(env, fd, SOL_UDP, UDP_GRO, &optval, sizeof(optval));
+}
+
+
 static jlong netty_epoll_linuxsocket_sendFile(JNIEnv* env, jclass clazz, jint fd, jobject fileRegion, jlong base_off, jlong off, jlong len) {
     jobject fileChannel = (*env)->GetObjectField(env, fileRegion, fileChannelFieldId);
     if (fileChannel == NULL) {
@@ -642,6 +661,7 @@ static jlong netty_epoll_linuxsocket_sendFile(JNIEnv* env, jclass clazz, jint fd
 
     return res;
 }
+
 // JNI Registered Methods End
 
 // JNI Method Registration Table Begin
