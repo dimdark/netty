@@ -41,7 +41,7 @@
 #include <sys/syscall.h>
 
 // Needed for UDP_SEGMENT
-#include <netinet/udp.h>
+//#include <netinet/udp.h>
 
 #include "netty_epoll_linuxsocket.h"
 #include "netty_unix_buffer.h"
@@ -379,12 +379,12 @@ static jint netty_epoll_native_sendmmsg0(JNIEnv* env, jclass clazz, jint fd, jbo
     return (jint) res;
 }
 
-static void init_packet(JNIEnv* env, jobject packet, struct mmsghdr* msg) {
+static void init_packet(JNIEnv* env, jobject packet, struct msghdr* msg, int len) {
     jbyteArray address = (jbyteArray) (*env)->GetObjectField(env, packet, packetAddrFieldId);
 
-    (*env)->SetIntField(env, packet, packetCountFieldId, msg->msg_len);
+    (*env)->SetIntField(env, packet, packetCountFieldId, len);
 
-    struct sockaddr_storage* addr = (struct sockaddr_storage*) msg->msg_hdr.msg_name;
+    struct sockaddr_storage* addr = (struct sockaddr_storage*) msg->msg_name;
 
     if (addr->ss_family == AF_INET) {
         struct sockaddr_in* ipaddr = (struct sockaddr_in*) addr;
@@ -411,7 +411,7 @@ static void init_packet(JNIEnv* env, jobject packet, struct mmsghdr* msg) {
     struct cmsghdr *cmsg = NULL;
     uint16_t gso_size = 0;
     uint16_t *gsosizeptr = NULL;
-    for (cmsg = CMSG_FIRSTHDR(&msg); cmsg != NULL; cmsg = CMSG_NXTHDR(&msg, cmsg)) {
+    for (cmsg = CMSG_FIRSTHDR(msg); cmsg != NULL; cmsg = CMSG_NXTHDR(msg, cmsg)) {
        if (cmsg->cmsg_level == SOL_UDP && cmsg->cmsg_type == UDP_GRO) {
            gsosizeptr = (uint16_t *) CMSG_DATA(cmsg);
            gso_size = *gsosizeptr;
@@ -442,7 +442,7 @@ static jint netty_epoll_native_recvmsg0(JNIEnv* env, jclass clazz, jint fd, jboo
     if (res < 0) {
         return -err;
     }
-    init_packet(env, packet, &msg);
+    init_packet(env, packet, &msg, res);
     return (jint) res;
 }
 
@@ -479,7 +479,7 @@ static jint netty_epoll_native_recvmmsg0(JNIEnv* env, jclass clazz, jint fd, jbo
 
     for (i = 0; i < res; i++) {
         jobject packet = (*env)->GetObjectArrayElement(env, packets, i + offset);
-        init_packet(env, packet, &msg[i]);
+        init_packet(env, packet, &msg[i].msg_hdr, msg[i].msg_len);
     }
 
     return (jint) res;

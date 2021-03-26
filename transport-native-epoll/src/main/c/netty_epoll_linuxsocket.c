@@ -25,6 +25,7 @@
 #include <string.h>
 #include <errno.h>
 #include <netinet/in.h>
+#include <netinet/udp.h> // SOL_UDP
 #include <sys/sendfile.h>
 #include <linux/tcp.h> // TCP_NOTSENT_LOWAT is a linux specific define
 #include <linux/udp.h> // UDP_GRO
